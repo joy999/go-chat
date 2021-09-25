@@ -1,0 +1,126 @@
+<html>
+    <head>
+        <title>聊天室</title>
+        <script src="jquery-3.6.0.min.js"></script>
+        <script>
+            $(function(){
+                var ws
+                var room_id
+                function connect() {
+                    ws = new WebSocket('ws://127.0.0.1:12345/ws');
+                    ws.onclose = close
+                    ws.onerror = close
+                    ws.onopen = function() {
+                        ws.send( $('#user').val() )
+                        $('#login').hide();
+                        $('#logout').show();
+                        $('#user').attr('disabled', true);
+                    }
+                    ws.onmessage = onMessage
+                }
+                function close() {
+                    if ( ws ) {
+                        ws.close();
+                        ws = null
+                    }
+                    $('#logout').hide();
+                    $('#login').show();
+                    $('#user').attr('disabled', false)
+                }
+                function sendMsg( cmd, body ) {
+                    ws.send(JSON.stringify({
+                        cmd, body,
+                    }));
+                }
+                function onMessage(e) {
+                    var data = JSON.parse( e.data )
+                    switch(data.cmd) {
+                        case 'init':
+                            sendMsg('roomlist');
+                            break;
+                        case 'heartjump':
+                            sendMsg('heartjump',null);
+                            break;
+                        case 'roomlist':
+                            updateRoolList( data.body );
+                            break;
+                        case 'enterroom':
+                            room_id = data.body;
+                            $('#history').val('');
+                            $('#roomname').text('聊天室' + data.body );
+                            break;
+                        case 'leaveroom':
+                            $('#roomname').text('无');
+                            break;
+                        case 'msg':
+                            var msg = data.body;
+                            if ( msg.room_id != room_id ) { //非相同聊天室，忽略
+                                break;
+                            }
+                            var m = '[' + msg.from + ']: ' 
+                            m += msg.msg + "\n";
+                            $('#history').val( m + $('#history').val() );
+                            break;
+                        case 'sysmsg':
+                            var msg = data.body;
+                            var m = '【' + msg.from + '】: ' 
+                            m += msg.msg + "\n";
+                            $('#history').val( m + $('#history').val() );
+                            break;
+                    }
+                }
+                function updateRoolList( data ) {
+                    $('#roomlist').html('');
+                    var data = data.list || [];
+                    for (var v of data) {
+                        $('<option>').val( v ).text('聊天室' + v).appendTo( $('#roomlist') );
+                    }
+                }
+                $('#login').click(function(){
+                    connect();
+                });
+                $('#logout').click(function(){
+                    close()
+                })
+                $('#newroom').click(function(){
+                    sendMsg('newroom', null)
+                })
+                $('#joinroom').click(function(){
+                    var roomid = $('#roomlist').val()
+                    if ( ! roomid ) {
+                        alert('请先选择一个房间！');
+                        return;
+                    }
+                    sendMsg('setroom', roomid)
+                })
+                $('#leaveroom').click(function(){
+                    sendMsg('leaveroom', null)
+                })
+                $('#sendmsg').click(function(){
+                    sendMsg('sendmsg', $('#msg').val() )
+                    $('#msg').val('').focus();
+                })
+            })
+        </script>
+    </head>
+    <body>
+        用户：<input type="text" id="user" size=50 /><input type="button" value="登录" id="login" /><input type="button" value="登出" id="logout" style="display: none;" />
+
+        <div>
+            <select id="roomlist">
+
+            </select>
+            <input type="button" value="进入" id="joinroom" />
+            <input type="button" value="新建" id="newroom" />
+        </div>
+        
+        <div>
+            当前聊天室：<span id="roomname"></span><input type="button" value="离开" id="leaveroom" />
+        </div>
+
+        <div>
+            <input type="text" id="msg" size=100 /><input type="button" value="发送" id="sendmsg" /><br />
+            <textarea id="history" style="width:100%; height: 400px;" readonly="readonly"></textarea>
+        </div>
+    </body>
+</html>

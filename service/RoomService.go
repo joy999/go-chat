@@ -75,6 +75,9 @@ func (this *roomService) AddOneUserToOneRoom(uname string, room_id uint) error {
 		room.UserList = append(room.UserList, user)
 	})
 	user.RoomId = room_id
+
+	user.Conn.Send("enterroom", room_id)
+
 	return nil
 }
 
@@ -96,6 +99,9 @@ func (this *roomService) RemoveOneUserFromOneRoom(uname string, room_id uint) er
 		}
 	})
 	user.RoomId = 0
+
+	user.Conn.Send("leaveroom", nil)
+
 	return nil
 }
 

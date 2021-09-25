@@ -58,11 +58,29 @@ func (this *userService) AddUser(name string, conn *model.Conn) *model.UserInfo 
 	return info
 }
 
-func (this *userService) RemoveUser(name string) {
-	v := this.Find(name)
+//这个方法在获取用户对象的同时，也可以校验用户对象是否是被管理的状态
+func (this *userService) getUser(user interface{}) *model.UserInfo {
+	switch v := user.(type) {
+	case string:
+		return this.Find(v)
+	case *model.UserInfo:
+		v0 := this.Find(v.Name)
+		if v0 == v {
+			return v
+		} else {
+			return nil
+		}
+	default:
+		return nil
+	}
+}
+
+func (this *userService) RemoveUser(user interface{}) {
+	v := this.getUser(user)
 	if v == nil {
 		return
 	}
+	name := v.Name
 	//从房间中移除
 	if v.RoomId > 0 {
 		RoomService.RemoveOneUserFromOneRoom(name, v.RoomId)

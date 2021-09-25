@@ -3,8 +3,10 @@ package model
 import (
 	"encoding/json"
 	"gochat/utils"
+	"log"
 	"time"
 
+	"github.com/gogf/gf/encoding/gjson"
 	"golang.org/x/net/websocket"
 )
 
@@ -63,38 +65,60 @@ func (this *Conn) Run() {
 		bs  []byte
 		err error
 	)
-	for {
-		select {
-		case c, ok = <-this.Sending: //写指令
-			if !ok || c == nil { //故障，退出
-				return
-			}
-			bs, err = json.Marshal(c)
-			bs = append(bs, '\n')
 
-			if err = websocket.Message.Send(this.Conn, bs); err != nil {
-				return
-			}
-
-		case <-time.After(time.Second * 15): //心跳
-			this.Send("heartjump")
-
-			this.heartJumpLock.LockFn(func() {
-				this.heartJumpTimes++
-				if this.heartJumpTimes >= 3 { //心跳超过3次(180秒)，则关闭连接
-					this.Close()
+	go func() {
+		for {
+			select {
+			case c, ok = <-this.Sending: //写指令
+				log.Println("sending...")
+				if !ok || c == nil { //故障，退出
+					log.Println("Sending Get ERROR", err)
 					return
 				}
-			})
-		default: //读指令
-			if err = websocket.Message.Receive(this.Conn, &bs); err != nil {
-				return
+				bs, err = json.Marshal(c)
+
+				if err = websocket.Message.Send(this.Conn, string(bs)); err != nil {
+					log.Println("Send ERROR", err)
+					this.Conn.Close()
+					return
+				}
+
+			case <-time.After(time.Second * 15): //心跳
+				log.Println("send heartjump...")
+				this.Send("heartjump")
+
+				this.heartJumpLock.LockFn(func() {
+					this.heartJumpTimes++
+					if this.heartJumpTimes >= 3 { //心跳超过3次(180秒)，则关闭连接
+						this.Close()
+						log.Println("heartJumpTimes >= 3 ERROR", err)
+						return
+					}
+				})
 			}
-			//解析指令
-			if err = json.Unmarshal(bs, &c); err == nil {
-				//解析无异常，执行
-				this.Received <- c
+		}
+	}()
+
+	for {
+		log.Println("wait read...")
+		if err = websocket.Message.Receive(this.Conn, &bs); err != nil {
+			log.Println("Read ERROR", err)
+			this.Conn.Close()
+			return
+		} else {
+			log.Println("Received ", string(bs))
+		}
+		//解析指令
+
+		if j, err := gjson.DecodeToJson(bs); err == nil {
+			//解析无异常，执行
+			if err = j.Scan(&c); err != nil {
+				log.Println("JSON scan error ", err)
 			}
+
+			this.Received <- c
+		} else {
+			log.Println("JSON parse error ", err)
 		}
 	}
 }

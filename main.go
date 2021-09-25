@@ -12,6 +12,8 @@ import (
 
 func main() {
 	http.Handle("/ws", websocket.Handler(accept))
+	http.Handle("/", http.FileServer(http.Dir("web")))
+
 	err := http.ListenAndServe(":12345", nil)
 	if err != nil {
 		panic("ListenAndServe: " + err.Error())
@@ -32,7 +34,9 @@ func accept(ws *websocket.Conn) {
 
 	log.Println("name", name)
 	user := service.UserService.AddUser(name, conn)
+	defer service.UserService.RemoveUser(user)
 	log.Println("add user")
+	user.Conn.Send("init", nil)
 	go router.WSRoute(user)
 	conn.Run()
 }

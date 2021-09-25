@@ -31,6 +31,9 @@ func (this roomApi) NewRoom(user *model.UserInfo, data *gjson.Json) {
 }
 
 func (this roomApi) SetRoom(user *model.UserInfo, data *gjson.Json) {
+	if user.RoomId > 0 { //先离开原来的房间
+		service.RoomService.RemoveOneUserFromOneRoom(user.Name, user.RoomId)
+	}
 	service.RoomService.AddOneUserToOneRoom(user.Name, data.Var().Uint())
 	this.GetHistory(user, data)
 }
@@ -45,9 +48,13 @@ func (this roomApi) GetHistory(user *model.UserInfo, data *gjson.Json) {
 
 func (this roomApi) SendMsg(user *model.UserInfo, data *gjson.Json) {
 	msg := data.Var().String()
+	if len(msg) == 0 { //空消息不发送
+		return
+	}
 	bs := []byte(msg)
 	if bs[0] == '/' {
 		service.GmService.DoCmd(user, string(bs[1:]))
+		return
 	}
 	if user.RoomId > 0 {
 		service.RoomService.SendMsg(user.RoomId, user.Name, msg)
