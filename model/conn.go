@@ -31,8 +31,11 @@ func NewConn(ws *websocket.Conn) *Conn {
 }
 
 func (this *Conn) Close() {
-	this.Conn.Close()
+	if this.Conn != nil {
+		this.Conn.Close()
+	}
 	close(this.Sending)
+	close(this.Received)
 }
 
 func (this *Conn) Send(cmd string, body ...interface{}) {

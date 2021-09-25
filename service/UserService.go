@@ -51,8 +51,6 @@ func (this *userService) AddUser(name string, conn *model.Conn) *model.UserInfo 
 		CreateTime: time.Now(),
 	}
 	this.users[name] = info
-	//启动网络数据处理
-	ConnService.AddConn(name, conn)
 	info.Conn = conn
 
 	return info
@@ -89,8 +87,6 @@ func (this *userService) RemoveUser(user interface{}) {
 	this.lock.LockFn(func() {
 		delete(this.users, name)
 	})
-	//移除连接管理
-	ConnService.RemoveConn(name)
 	//关闭连接
 	v.Conn.Close()
 }

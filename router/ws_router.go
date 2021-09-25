@@ -9,7 +9,10 @@ import (
 
 func WSRoute(user *model.UserInfo) {
 	for {
-		cmd := <-user.Conn.Received
+		cmd, ok := <-user.Conn.Received
+		if cmd == nil || !ok {
+			return
+		}
 		body := gjson.New(cmd.Body)
 		switch cmd.Cmd {
 		case "newroom":

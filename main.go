@@ -11,6 +11,10 @@ import (
 )
 
 func main() {
+	ServeRun()
+}
+
+func ServeRun() {
 	http.Handle("/ws", websocket.Handler(accept))
 	http.Handle("/", http.FileServer(http.Dir("web")))
 
@@ -18,7 +22,6 @@ func main() {
 	if err != nil {
 		panic("ListenAndServe: " + err.Error())
 	}
-
 }
 
 func accept(ws *websocket.Conn) {
