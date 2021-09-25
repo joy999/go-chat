@@ -35,11 +35,11 @@ func TestFilter(t *testing.T) {
 		}
 	}
 	time.Sleep(time.Second * 10)
-	FilterService.Filter("abc!hello,world!abc,abc,abc")
+	go FilterService.Filter("abc!hello,world!abc,abc,abc")
 	time.Sleep(time.Second * 1)
-	FilterService.Filter("haha~~~How are you? hello!")
+	go FilterService.Filter("haha~~~How are you? hello!")
 	time.Sleep(time.Second * 2)
-	FilterService.Filter("Hello, everyone! hello?")
+	go FilterService.Filter("Hello, everyone! hello?")
 	time.Sleep(time.Second * 2)
 
 	s1 := FilterService.PopularWords(1)
