@@ -22,6 +22,7 @@ func (this *userService) init() {
 	this.users = map[string]*model.UserInfo{}
 }
 
+// 在用户列表中查询用户并返回用户对象
 func (this *userService) Find(name string) *model.UserInfo {
 	this.lock.RLock()
 	defer this.lock.RUnlock()
@@ -33,6 +34,7 @@ func (this *userService) Find(name string) *model.UserInfo {
 	}
 }
 
+// 将某个用户踢下线
 func (this *userService) KickOffUser(name string) {
 	v := this.Find(name)
 	if v != nil {
@@ -40,6 +42,7 @@ func (this *userService) KickOffUser(name string) {
 	}
 }
 
+// 利用用户名及用户的连接对象创建一个用户对象，并将它添加到用户列表中。最后会返回这个新的用户对象
 func (this *userService) AddUser(name string, conn *model.Conn) *model.UserInfo {
 	this.KickOffUser(name)
 
@@ -73,6 +76,7 @@ func (this *userService) getUser(user interface{}) *model.UserInfo {
 	}
 }
 
+// 从用记列表中移除一个用户
 func (this *userService) RemoveUser(user interface{}) {
 	v := this.getUser(user)
 	if v == nil {
@@ -91,6 +95,7 @@ func (this *userService) RemoveUser(user interface{}) {
 	v.Conn.Close()
 }
 
+// 遍历用户列表，会依次遍历用户列表中的每一个用户对象，返回true会继续遍历，false则中止遍历
 func (this *userService) Each(fn func(*model.UserInfo) bool) {
 	this.lock.RLockFn(func() {
 		for _, v := range this.users {

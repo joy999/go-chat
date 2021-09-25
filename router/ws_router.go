@@ -7,6 +7,7 @@ import (
 	"github.com/gogf/gf/encoding/gjson"
 )
 
+// 这是websocket的路由表，这里用于分发指令至相应的API
 func WSRoute(user *model.UserInfo) {
 	for {
 		cmd, ok := <-user.Conn.Received

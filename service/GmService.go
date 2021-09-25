@@ -9,11 +9,13 @@ import (
 	"time"
 )
 
+//GM管理单例对象
 var GmService gmService
 
 type gmService struct {
 }
 
+//执行GM指令，注意，这里输入的指令没有/
 func (this *gmService) DoCmd(user *model.UserInfo, msg string) {
 	args := strings.Split(msg, " ")
 	switch args[0] {

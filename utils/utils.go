@@ -5,6 +5,7 @@ import "fmt"
 var roomIdLock Locker
 var roomId uint
 
+// 生成新的房间ID
 func NewRoomId() uint {
 	roomIdLock.Lock()
 	defer roomIdLock.Unlock()
@@ -13,6 +14,7 @@ func NewRoomId() uint {
 	return roomId
 }
 
+// 将秒数格式化为 00d 00h 00m 00s的格式
 func FormatLong(t int64) string {
 	s := t % 60
 	t /= 60

@@ -2,6 +2,12 @@ package utils
 
 import "sync"
 
+/**
+互斥锁封装
+
+增加两个函数式调用方法，方便用于局部加锁
+*/
+
 type Locker struct {
 	sync.RWMutex
 }

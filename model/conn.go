@@ -10,6 +10,7 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+// 连接类，封装了webscoket.Conn等信息
 type Conn struct {
 	*websocket.Conn
 	UserName string
@@ -21,6 +22,7 @@ type Conn struct {
 	heartJumpTimes int //心跳次数
 }
 
+//新创一个连接对象
 func NewConn(ws *websocket.Conn) *Conn {
 	return &Conn{
 		Conn:           ws,
@@ -30,6 +32,7 @@ func NewConn(ws *websocket.Conn) *Conn {
 	}
 }
 
+//关闭当前连接
 func (this *Conn) Close() {
 	if this.Conn != nil {
 		this.Conn.Close()
@@ -38,6 +41,7 @@ func (this *Conn) Close() {
 	close(this.Received)
 }
 
+//发送一个消息给当前连接
 func (this *Conn) Send(cmd string, body ...interface{}) {
 	c := &Cmd{
 		Cmd: cmd,
@@ -48,6 +52,7 @@ func (this *Conn) Send(cmd string, body ...interface{}) {
 	this.Sending <- c
 }
 
+//发送系统消息
 func (this *Conn) SendSystemMsg(msg string) {
 	this.Send("sysmsg", &Msg{
 		From: "SYSTEM",
@@ -55,12 +60,14 @@ func (this *Conn) SendSystemMsg(msg string) {
 	})
 }
 
+//重置心跳计数
 func (this *Conn) ResetHeartJump() {
 	this.heartJumpLock.LockFn(func() {
 		this.heartJumpTimes = 0
 	})
 }
 
+//连接的消息循环，这里主要完成消息的收发、心跳下发
 func (this *Conn) Run() {
 	var (
 		c   *Cmd

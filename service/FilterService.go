@@ -1,5 +1,9 @@
 package service
 
+/*
+ 过滤处理类
+
+*/
 import (
 	"gochat/model"
 	"gochat/utils"
@@ -10,10 +14,11 @@ import (
 )
 
 var (
-	FilterService filterService
-	az, AZ        []rune
+	FilterService filterService //单例对象
+	az, AZ        []rune        //边界
 )
 
+//过滤类
 type filterService struct {
 	top      *FilterNode
 	starWord rune
@@ -22,17 +27,20 @@ type filterService struct {
 	msgRecords *utils.List
 }
 
+//词库节点
 type FilterNode struct {
 	Next  map[rune]*FilterNode
 	IsEnd bool
 }
 
+//初始化
 func init() {
 	FilterService.init()
 	az = []rune("az")
 	AZ = []rune("AZ")
 }
 
+//执行过滤，输入待过滤字符串，返回已过滤的字符串
 func (this *filterService) Filter(msg string) string {
 	//这里压入消息队列，是为了异步处理记录消息历史
 	this.msgQueue <- msg
@@ -43,6 +51,7 @@ func (this *filterService) Filter(msg string) string {
 	return string(words)
 }
 
+//用于统计指令秒数内最常用的单词，参数为秒，这里需要注意，这里只能传入不大于60
 func (this *filterService) PopularWords(n int) string {
 	records := this.msgRecords.GetAll()
 	t := time.Now().Unix() - int64(n)
@@ -59,7 +68,7 @@ func (this *filterService) PopularWords(n int) string {
 
 				rs := []rune(v)
 				for k, v := range rs {
-					if v >= az[0] && v <= az[1] || v >= AZ[0] && v <= AZ[1] {
+					if v >= az[0] && v <= az[1] || v >= AZ[0] && v <= AZ[1] { //只认为英文字母为单词，其它均不认为是单词
 						continue
 					}
 					rs[k] = ' '
@@ -93,6 +102,7 @@ func (this *filterService) PopularWords(n int) string {
 	return mxWords
 }
 
+//私有方法，进行过滤词替换
 func (this *filterService) replaceWords(words []rune, node *FilterNode, i int) (int, bool) {
 	if i >= len(words) {
 		if node.IsEnd { //全词匹配
@@ -120,6 +130,7 @@ func (this *filterService) replaceWords(words []rune, node *FilterNode, i int) (
 	return i, false
 }
 
+//对象初始化，由于是单例对象，只会被调用一次
 func (this *filterService) init() {
 	var (
 		words          []rune
@@ -182,12 +193,13 @@ func (this *filterService) init() {
 	go this.recordWordsForPopular()
 }
 
+//这是一个记录历史消息的消息循环，会随系统启动时而开启
 func (this *filterService) recordWordsForPopular() {
 	for {
 		words := <-this.msgQueue
 		var msgRecord *model.MsgRecord = nil
 		t := time.Now().Unix()
-		pos := int(t % 60)
+		pos := int(t % 60) //每一秒我们存放一个历史消息切片，由于是循环队列，故尔只会记录最近60秒内的历史消息，超过的会被覆盖。
 		node := this.msgRecords.GetAt(pos)
 		if node != nil {
 			msgRecord = node.(*model.MsgRecord)
